@@ -13,14 +13,14 @@ pub trait Fixture {
     /// type but a type that represents success or failure of some internal
     /// processing.
     type Output;
-    
+
     /// Type of error that can occur when producing the expected output.
     type Error;
-    
+
     /// Some handlers under test may require extension data in order to process
     /// the input, say from configuration or external systems.
     type Extension: Default;
-    
+
     /// Sometimes the raw input data needs to be transformed before being
     /// passed to the test case handler, for example to adjust timestamps to
     /// be relative to 'now'.
