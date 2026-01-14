@@ -1,5 +1,22 @@
+[package]
+name = "augentic-test"
+description = "Traits and utilities to use across realtime tests"
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+readme = "README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
 [workspace]
-members = ["crates/*"]
+# members = ["crates/*"]
 resolver = "3"
 
 [workspace.package]
