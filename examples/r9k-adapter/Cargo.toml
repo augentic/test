@@ -1,0 +1,39 @@
+[package]
+name = "r9k-adapter"
+description = " R9K position adapter"
+readme = "README.md"
+publish = false
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+keywords.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+anyhow.workspace = true
+bytes.workspace = true
+chrono.workspace = true
+chrono-tz.workspace = true
+http.workspace = true
+http-body.workspace = true
+http-body-util.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+qwasr-sdk.workspace = true
+
+quick-xml = { version = "0.39.0", features = ["serde", "serialize"] }
+serde_repr = "0.1.20"
+
+[dev-dependencies]
+augentic-test.workspace = true
+tokio.workspace = true

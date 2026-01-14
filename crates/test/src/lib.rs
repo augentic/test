@@ -71,8 +71,11 @@ pub struct PreparedTestCase<D>
 where
     D: Fixture + Clone,
 {
+    /// Prepared input data ready for the handler under test.
     pub input: D::Input,
+    /// Optional extension data required by the handler.
     pub extension: Option<D::Extension>,
+    /// Expected output or error produced by the fixture.
     pub output: Option<Result<D::Output, D::Error>>,
 }
 
