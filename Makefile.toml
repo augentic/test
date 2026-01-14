@@ -1,0 +1,103 @@
+# Install: `cargo install cargo-make`
+# Help: https://sagiegurari.github.io/cargo-make/
+
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[config]
+default_to_workspace = true
+skip_core_tasks = true
+skip_crate_env_info = true
+skip_git_env_info = true
+skip_rust_env_info = true
+
+# -----------------------------------------------------------------------------
+# Build and test
+# -----------------------------------------------------------------------------
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+dependencies = ["clean"]
+
+[tasks.test]
+command = "cargo"
+args = ["nextest", "run", "--all", "--no-fail-fast", "--all-features"]
+env = { RUSTFLAGS = "-Dwarnings" }
+
+[tasks.test-doc]
+command = "cargo"
+args = ["test", "doc"]
+env = { RUSTFLAGS = "-Dwarnings" }
+
+# -----------------------------------------------------------------------------
+# Hygiene
+# -----------------------------------------------------------------------------
+
+[tasks.fmt]
+script = "cargo +nightly fmt --all"
+
+[tasks.lint]
+command = "cargo"
+args = ["clippy", "--all-features", "--target", "wasm32-wasip2"]
+install_crate = { rustup_component_name = "clippy" }
+
+[tasks.update]
+command = "cargo"
+args = ["update"]
+
+[tasks.upgrade]
+command = "cargo"
+args = ["upgrade"]
+install_crate = "cargo-edit"
+
+[tasks.audit]
+command = "cargo"
+args = ["audit"]
+
+[tasks.vet-imports]
+command = "cargo"
+args = ["vet", "regenerate", "imports"]
+install_crate = "cargo-vet"
+
+[tasks.vet-exempt]
+command = "cargo"
+args = ["vet", "regenerate", "exemptions"]
+install_crate = "cargo-vet"
+
+[tasks.vet-unpub]
+command = "cargo"
+args = ["vet", "regenerate", "unpublished"]
+install_crate = "cargo-vet"
+
+[tasks.vet]
+command = "cargo"
+args = ["vet", "--locked"]
+install_crate = "cargo-vet"
+dependencies = ["vet-imports", "vet-exempt", "vet-unpub"]
+
+[tasks.deny]
+command = "cargo"
+args = ["deny", "--workspace", "check"]
+install_crate = "cargo-deny"
+
+[tasks.unused]
+command = "cargo"
+args = ["machete", "--skip-target-dir"]
+install_crate = "cargo-machete"
+
+[tasks.outdated]
+command = "cargo"
+args = ["outdated", "--workspace", "--exit-code", "1"]
+install_crate = "cargo-outdated"
+
+[tasks.check]
+dependencies = ["audit", "fmt", "lint", "unused"]
+
+# Emulate CI (mostly - miri and outdated are missing)
+[tasks.ci]
+dependencies = ["lint", "test", "test-doc", "vet", "deny", "fmt"]
