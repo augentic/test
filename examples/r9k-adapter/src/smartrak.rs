@@ -167,7 +167,7 @@ pub struct SerialData {
 }
 
 /// Decodes bdc Serial Data, supports base64 format encoded and just string.
-/// 
+///
 /// ex: `MjQ1MDU0NDgzMTJjMzEyYzMxMzUzYTMwMzgyYzMwMmMzMjMwMzIzMTM5MzgzNTMzMmMyYzJjMzQzMzMxMzUzMDJjMzEyYzMxMzUzYTMyMzAyYzMxMmMzNDMzMzIzMzJjMzMzMzM2MzkyYzMxMzUyYzM2MmMzMjJhMzYzNg==`
 /// ex: `$PTH1,1,00:02,0,22101670,,7380,124046,2,23:45,1,2035,2037,0,0,0*6b`
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
