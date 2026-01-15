@@ -1,5 +1,7 @@
 //! Test Utilities and traits for use across Augentic projects.
 
+pub mod fetch;
+
 /// A trait that expresses the structure of taking in some data and
 /// constructing (say by deserialization) an input and an output.
 pub trait Fixture {
