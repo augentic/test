@@ -49,6 +49,8 @@ pub enum TestResult<E: std::error::Error> {
 
 #[cfg(test)]
 mod tests {
+    use crate::fetch::Method;
+
     use super::*;
 
     #[test]
@@ -61,7 +63,6 @@ mod tests {
             "http_requests": [
                 {
                     "path": "/gtfs/stops",
-                    "method": "GET",
                     "response": {
                         "body": "[{\"stop_code\":\"133\",\"stop_lat\":-36.84429,\"stop_lon\":174.76847}]"
                     }
@@ -88,18 +89,20 @@ mod tests {
 
         let input: String = serde_json::from_value(test_def.input).unwrap();
         assert!(input.starts_with("<CCO"));
-
-        // assert_eq!(
-        //     test_def.params.unwrap()["delay"],
-        //     serde_json::json!(9)
-        // );
-        // assert_eq!(test_def.http_requests.unwrap().len(), 2);
-        // match test_def.output.unwrap() {
-        //     Output::Success(events) => {
-        //         let events_array = events.as_array().unwrap();
-        //         assert_eq!(events_array.len(), 4);
-        //     }
-        //     Output::Error(_) => panic!("Expected success output"),
-        // }
+        assert_eq!(
+            test_def.params.expect("params exist")["delay"],
+            serde_json::json!(9)
+        );
+        let http_requests = test_def.http_requests.expect("http requests exist");
+        assert_eq!(http_requests.len(), 2);
+        assert_eq!(http_requests[0].method, Method::GET); // default applied
+        assert_eq!(http_requests[1].path, "/allocations/trips");
+        match test_def.output.expect("output exists") {
+            TestResult::Success(events) => {
+                let events_array = events.as_array().expect("output is an array");
+                assert_eq!(events_array.len(), 4);
+            }
+            TestResult::Failure(_) => panic!("Expected success output"),
+        }
     }
 }
