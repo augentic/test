@@ -127,6 +127,7 @@ dependencies = [
  "anyhow",
  "bytes",
  "http",
+ "qwasr-sdk",
  "serde",
  "serde_json",
 ]

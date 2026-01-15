@@ -3,10 +3,10 @@
 use anyhow::anyhow;
 use bytes::Bytes;
 use http::header::HOST;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 /// Configuration for mocking fetch requests.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub struct Fetch {
     /// Authority (host) to match for mock fetch requests.
@@ -50,7 +50,7 @@ impl Default for Fetch {
 }
 
 /// Supported HTTP verbs (methods) for fetch requests.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub enum Method {
     /// GET method.
     GET,
@@ -65,7 +65,7 @@ pub enum Method {
 }
 
 /// Mock HTTP response for fetch requests.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub struct Response {
     /// HTTP status code.

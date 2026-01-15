@@ -21,3 +21,6 @@ bytes.workspace = true
 http.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+
+[dev-dependencies]
+qwasr-sdk.workspace = true
