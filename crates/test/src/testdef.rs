@@ -12,7 +12,7 @@ pub struct TestDef<E: std::error::Error> {
     ///
     /// The `Value` is expected to be deserialized into the input
     /// type needed by the test case handler.
-    pub input: Value,
+    pub input: Option<Value>,
 
     /// Transform parameters.
     ///
@@ -86,7 +86,9 @@ mod tests {
 
         let test_def: TestDef<qwasr_sdk::Error> = serde_json::from_str(json).unwrap();
 
-        let input: String = serde_json::from_value(test_def.input).unwrap();
+        let Value::String(input) = test_def.input.expect("input exists") else {
+            panic!("Expected input to be a string");
+        };
         assert!(input.starts_with("<CCO"));
         assert_eq!(test_def.params.expect("params exist")["delay"], serde_json::json!(9));
         let http_requests = test_def.http_requests.expect("http requests exist");
@@ -121,7 +123,9 @@ mod tests {
 
         let test_def: TestDef<qwasr_sdk::Error> = serde_json::from_str(json).unwrap();
 
-        let input: String = serde_json::from_value(test_def.input).unwrap();
+        let Value::String(input) = test_def.input.expect("input exists") else {
+            panic!("Expected input to be a string");
+        };
         assert!(input.starts_with("<CCO"));
         assert_eq!(test_def.params.expect("params exist")["delay"], serde_json::json!(506));
         assert!(test_def.http_requests.is_none());

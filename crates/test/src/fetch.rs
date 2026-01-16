@@ -4,6 +4,7 @@ use anyhow::anyhow;
 use bytes::Bytes;
 use http::header::HOST;
 use serde::Deserialize;
+use serde_json::Value;
 
 /// Configuration for mocking fetch requests.
 #[derive(Clone, Debug, Deserialize)]
@@ -76,15 +77,15 @@ pub struct Response {
 
     /// Response body.
     ///
-    /// This is a string that the test is expected to deserialize as needed.
+    /// This is a `Value` that the test is expected to deserialize as needed.
     /// Defaults to an empty string for tests that do not require asserting on
     /// response body contents.
-    pub body: String,
+    pub body: Value,
 }
 
 impl Default for Response {
     fn default() -> Self {
-        Self { status: 200, body: String::new() }
+        Self { status: 200, body: Value::String(String::new()) }
     }
 }
 
@@ -145,7 +146,7 @@ impl Fetcher {
         })?;
 
         let status = fetch.response.status;
-        let body = Bytes::from(fetch.response.body.clone());
+        let body = Bytes::from(fetch.response.body.to_string());
 
         http::Response::builder().status(status).body(body).map_err(anyhow::Error::new)
     }
@@ -153,6 +154,8 @@ impl Fetcher {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
 
     fn build_request(method: http::Method, uri: &str, host: Option<&str>) -> http::Request<()> {
@@ -222,7 +225,7 @@ mod tests {
             method: Method::GET,
             path: "/data".to_string(),
             request: Some("q=42".to_string()),
-            response: Response { status: 201, body: "{\"value\":42}".to_string() },
+            response: Response { status: 201, body: json!({"value": 42}) },
         };
         let fetcher = Fetcher::new(vec![fetch]);
 
@@ -240,7 +243,7 @@ mod tests {
             method: Method::GET,
             path: "/allocations".to_string(),
             request: Some("vehicle=1".to_string()),
-            response: Response { status: 200, body: "[1]".to_string() },
+            response: Response { status: 200, body: json!([1]) },
         };
         let fetcher = Fetcher::new(vec![fetch]);
 
