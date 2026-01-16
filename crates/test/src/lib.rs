@@ -1,5 +1,7 @@
 //! Test Utilities and traits for use across Augentic projects.
 
+use crate::{fetch::Fetch, testdef::TestDef};
+
 pub mod fetch;
 pub mod testdef;
 
@@ -18,16 +20,16 @@ pub trait Fixture {
     type Output;
 
     /// Type of error that can occur when producing the expected output.
-    type Error;
-
-    /// Some handlers under test may require extension data in order to process
-    /// the input, say from configuration or external systems.
-    type Extension: Default;
+    type Error: std::error::Error;
 
     /// Sometimes the raw input data needs to be transformed before being
     /// passed to the test case handler, for example to adjust timestamps to
     /// be relative to 'now'.
     type TransformParams;
+
+    /// Convert test data definition into the specific data type that implements
+    /// this trait.
+    fn from_data(data_def: &TestDef<Self::Error>) -> Self;
 
     /// Convert input data into the input type needed by the test case handler.
     fn input(&self) -> Self::Input;
@@ -47,11 +49,6 @@ pub trait Fixture {
         f(self.input(), self.params().as_ref())
     }
 
-    /// Convert input data into extension data needed by the test case handler.
-    fn extension(&self) -> Option<Self::Extension> {
-        None
-    }
-
     /// Convert input data into the expected output type needed by the test
     /// case handler, which could be an error for failure cases.
     ///
@@ -61,9 +58,12 @@ pub trait Fixture {
     fn output(&self) -> Option<Result<Self::Output, Self::Error>>;
 }
 
-/// A test case that can be prepared for execution.
-pub struct TestCase<D> {
+/// A test case builder that can be prepared for execution.
+pub struct TestCase<D>
+where D: Fixture + Clone,
+{
     data: D,
+    raw: TestDef<D::Error>,
 }
 
 /// A test case that has been prepared for execution by transforming its input
@@ -76,8 +76,8 @@ where
 {
     /// Prepared input data ready for the handler under test.
     pub input: D::Input,
-    /// Optional extension data required by the handler.
-    pub extension: Option<D::Extension>,
+    /// Optional http request mocks required by the handler.
+    pub http_requests: Option<Vec<Fetch>>,
     /// Expected output or error produced by the fixture.
     pub output: Option<Result<D::Output, D::Error>>,
 }
@@ -88,8 +88,8 @@ where
 {
     /// Create a new test case from the given fixture data.
     #[must_use]
-    pub const fn new(data: D) -> Self {
-        Self { data }
+    pub const fn new(data: D, raw: TestDef<D::Error>) -> Self {
+        Self { data, raw }
     }
 
     /// Apply input transformation and translation of input data types into
