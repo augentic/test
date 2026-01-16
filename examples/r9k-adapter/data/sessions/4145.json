@@ -27,8 +27,40 @@
     ],
     "output": {
         "success": [
-            "{\"eventType\":\"Location\",\"receivedAt\":\"2025-10-07T11:00:00.000Z\",\"messageData\":{\"timestamp\":\"2025-10-08T08:47:14.273Z\"},\"eventData\":{},\"remoteData\":{\"externalId\":\"AMP212\"},\"locationData\":{\"gpsAccuracy\":0,\"latitude\":-37.20299,\"longitude\":174.9099,\"speed\":0}}",
-            "{\"eventType\":\"Location\",\"receivedAt\":\"2025-10-07T11:00:00.000Z\",\"messageData\":{\"timestamp\":\"2025-10-08T08:47:19.273Z\"},\"eventData\":{},\"remoteData\":{\"externalId\":\"AMP212\"},\"locationData\":{\"gpsAccuracy\":0,\"latitude\":-37.20299,\"longitude\":174.9099,\"speed\":0}}"
+            {
+                "eventType": "Location",
+                "receivedAt": "2025-10-07T11:00:00.000Z",
+                "messageData": {
+                    "timestamp": "2025-10-08T08:47:14.273Z"
+                },
+                "eventData": {},
+                "remoteData": {
+                    "externalId": "AMP212"
+                },
+                "locationData": {
+                    "gpsAccuracy": 0,
+                    "latitude": -37.20299,
+                    "longitude": 174.9099,
+                    "speed": 0
+                }
+            },
+            {
+                "eventType": "Location",
+                "receivedAt": "2025-10-07T11:00:00.000Z",
+                "messageData": {
+                    "timestamp": "2025-10-08T08:47:19.273Z"
+                },
+                "eventData": {},
+                "remoteData": {
+                    "externalId": "AMP212"
+                },
+                "locationData": {
+                    "gpsAccuracy": 0,
+                    "latitude": -37.20299,
+                    "longitude": 174.9099,
+                    "speed": 0
+                }
+            }
         ]
     }
 }
