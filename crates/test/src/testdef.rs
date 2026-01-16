@@ -49,9 +49,8 @@ pub enum TestResult<E: std::error::Error> {
 
 #[cfg(test)]
 mod tests {
-    use crate::fetch::Method;
-
     use super::*;
+    use crate::fetch::Method;
 
     #[test]
     fn test_deserialize_testdef_with_output() {
@@ -89,10 +88,7 @@ mod tests {
 
         let input: String = serde_json::from_value(test_def.input).unwrap();
         assert!(input.starts_with("<CCO"));
-        assert_eq!(
-            test_def.params.expect("params exist")["delay"],
-            serde_json::json!(9)
-        );
+        assert_eq!(test_def.params.expect("params exist")["delay"], serde_json::json!(9));
         let http_requests = test_def.http_requests.expect("http requests exist");
         assert_eq!(http_requests.len(), 2);
         assert_eq!(http_requests[0].method, Method::GET); // default applied
@@ -103,6 +99,41 @@ mod tests {
                 assert_eq!(events_array.len(), 4);
             }
             TestResult::Failure(_) => panic!("Expected success output"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_testdef_with_error() {
+        let json = r#"{
+            "input": "<CCO xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n   stream=\"3bedad6f-a633-4e5e-841f-80230c5b70cf\"\n   sequence=\"8704102\"\n   xsi:type=\"CCO\">\n   <ActualizarDatosTren>\n      <trenPar>5271</trenPar>\n      <trenImpar>5271</trenImpar>\n      <fechaCreacion>08/10/2025</fechaCreacion>\n      <numeroRegistro>12635383</numeroRegistro>\n      <operadorComercial>METRO</operadorComercial>\n      <pasoTren>\n         <tipoCambio>3</tipoCambio>\n         <estacion>18</estacion>\n         <idPaso>224641525</idPaso>\n         <horaEntrada>76740</horaEntrada>\n         <horaEntradaReal>76791</horaEntradaReal>\n         <haEntrado>true</haEntrado>\n         <tipoParada>4</tipoParada>\n         <paridad>i</paridad>\n         <sentido>1</sentido>\n         <horaSalida>76800</horaSalida>\n         <horaSalidaReal>76851</horaSalidaReal>\n         <haSalido>false</haSalido>\n         <viaEntradaMallas>0</viaEntradaMallas>\n         <retrasoEntrada>0</retrasoEntrada>\n         <viaCirculacionMallas>1</viaCirculacionMallas>\n         <retrasoSalida>0</retrasoSalida>\n         <horaInicioDetencion>-1</horaInicioDetencion>\n         <duracionDetencion>-1</duracionDetencion>\n      </pasoTren>\n      <pasoTren>\n         <tipoCambio>11</tipoCambio>\n         <estacion>20</estacion>\n         <idPaso>224641526</idPaso>\n         <horaEntrada>76920</horaEntrada>\n         <horaEntradaReal>76971</horaEntradaReal>\n         <haEntrado>false</haEntrado>\n         <tipoParada>5</tipoParada>\n         <paridad>i</paridad>\n         <sentido>1</sentido>\n         <horaSalida>76920</horaSalida>\n         <horaSalidaReal>76971</horaSalidaReal>\n         <haSalido>false</haSalido>\n         <viaEntradaMallas>4</viaEntradaMallas>\n         <retrasoEntrada>0</retrasoEntrada>\n         <viaCirculacionMallas>1</viaCirculacionMallas>\n         <retrasoSalida>0</retrasoSalida>\n         <horaInicioDetencion>-1</horaInicioDetencion>\n         <duracionDetencion>-1</duracionDetencion>\n      </pasoTren>\n      <pasoTren>\n         <tipoCambio>11</tipoCambio>\n         <estacion>19</estacion>\n         <idPaso>224641527</idPaso>\n         <horaEntrada>77100</horaEntrada>\n         <horaEntradaReal>77151</horaEntradaReal>\n         <haEntrado>false</haEntrado>\n         <tipoParada>5</tipoParada>\n         <paridad>i</paridad>\n         <sentido>1</sentido>\n         <horaSalida>-1</horaSalida>\n         <horaSalidaReal>-1</horaSalidaReal>\n         <haSalido>false</haSalido>\n         <viaEntradaMallas>1</viaEntradaMallas>\n         <retrasoEntrada>0</retrasoEntrada>\n         <viaCirculacionMallas>-</viaCirculacionMallas>\n         <retrasoSalida>0</retrasoSalida>\n         <horaInicioDetencion>-1</horaInicioDetencion>\n         <duracionDetencion>-1</duracionDetencion>\n      </pasoTren>\n      <codigoOperadorComercial>-1</codigoOperadorComercial>\n      <origenActualizaTren>GAC</origenActualizaTren>\n   </ActualizarDatosTren>\n</CCO>\n",
+            "params": {
+                "delay": 506
+            },
+            "output": {
+                "failure": {
+                    "BadRequest": {
+                        "code": "bad_time",
+                        "description": "outdated by 506 seconds"
+                    }
+                }
+            }
+        }"#;
+
+        let test_def: TestDef<qwasr_sdk::Error> = serde_json::from_str(json).unwrap();
+
+        let input: String = serde_json::from_value(test_def.input).unwrap();
+        assert!(input.starts_with("<CCO"));
+        assert_eq!(test_def.params.expect("params exist")["delay"], serde_json::json!(506));
+        assert!(test_def.http_requests.is_none());
+        match test_def.output.expect("output exists") {
+            TestResult::Failure(err) => {
+                let qwasr_sdk::Error::BadRequest { code, description } = &err else {
+                    panic!("Expected BadRequest error");
+                };
+                assert_eq!(code, "bad_time");
+                assert_eq!(description, "outdated by 506 seconds");
+            }
+            TestResult::Success(_) => panic!("Expected failure output"),
         }
     }
 }
