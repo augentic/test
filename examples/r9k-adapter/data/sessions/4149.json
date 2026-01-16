@@ -8,14 +8,14 @@
             "path": "/gtfs/stops",
             "method": "GET",
             "response": {
-                "body": "[{\"stop_code\":\"133\",\"stop_lat\":-36.84429,\"stop_lon\":174.76847}]"
+                "body": [{"stop_code": "133",  "stop_lat": -36.84429, "stop_lon": 174.76847}]
             }
         },
         {
             "path": "/allocations/trips",
             "method": "GET",
             "response": {
-                "body": "[\"AMP        823\"]"
+                "body": ["AMP        823"]
             }
         }
     ],

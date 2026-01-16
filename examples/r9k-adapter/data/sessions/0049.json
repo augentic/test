@@ -8,7 +8,13 @@
             "path": "/gtfs/stops",
             "method": "GET",
             "response": {
-                "body": "[{\"stop_code\": \"102\", \"stop_lat\": -36.91009,\"stop_lon\": 174.8157}]"
+                "body": [
+                    {
+                        "stop_code": "102",
+                        "stop_lat": -36.91009,
+                        "stop_lon": 174.8157
+                    }
+                ]
             }
         }
     ]

@@ -7,13 +7,21 @@
         {
             "path": "/gtfs/stops",
             "response": {
-                "body": "[{\"stop_code\": \"9218\", \"stop_lat\": -36.99388,\"stop_lon\": 174.87739}]"
+                "body": [
+                    {
+                        "stop_code": "9218",
+                        "stop_lat": -36.99388,
+                        "stop_lon": 174.87739
+                    }
+                ]
             }
         },
         {
             "path": "/allocations/trips",
             "response": {
-                "body": "[\"AMP        524\"]"
+                "body": [
+                    "AMP        524"
+                ]
             }
         }
     ],
