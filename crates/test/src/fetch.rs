@@ -91,6 +91,7 @@ impl Default for Response {
 
 /// Collection of fetch request configurations that can be used in an Augentic
 /// `HttpRequest` capability.
+#[derive(Clone, Debug, Deserialize)]
 pub struct Fetcher {
     /// List of fetch request configurations.
     pub fetches: Vec<Fetch>,
@@ -99,8 +100,8 @@ pub struct Fetcher {
 impl Fetcher {
     /// Create a new Fetcher with the given fetch request configurations.
     #[must_use]
-    pub const fn new(fetches: Vec<Fetch>) -> Self {
-        Self { fetches }
+    pub fn new(fetches: &[Fetch]) -> Self {
+        Self { fetches: fetches.to_vec() }
     }
 
     /// Simulate fetching a request by finding a matching fetch configuration
@@ -227,7 +228,7 @@ mod tests {
             request: Some("q=42".to_string()),
             response: Response { status: 201, body: json!({"value": 42}) },
         };
-        let fetcher = Fetcher::new(vec![fetch]);
+        let fetcher = Fetcher::new(&[fetch]);
 
         let request = build_request(http::Method::GET, "https://api.example.com/data?q=42", None);
         let response = fetcher.fetch(&request).expect("should find mock fetch");
@@ -245,7 +246,7 @@ mod tests {
             request: Some("vehicle=1".to_string()),
             response: Response { status: 200, body: json!([1]) },
         };
-        let fetcher = Fetcher::new(vec![fetch]);
+        let fetcher = Fetcher::new(&[fetch]);
 
         let request =
             build_request(http::Method::GET, "/allocations?vehicle=1", Some("example.com"));
@@ -257,7 +258,7 @@ mod tests {
 
     #[test]
     fn fetcher_missing_entry_errors() {
-        let fetcher = Fetcher::new(Vec::new());
+        let fetcher = Fetcher::new(&[]);
         let request = build_request(http::Method::GET, "https://example.com/api", None);
 
         let error = fetcher.fetch(&request).expect_err("should fail without mock");

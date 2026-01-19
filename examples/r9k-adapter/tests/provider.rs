@@ -6,6 +6,7 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Context, Result, anyhow};
+use augentic_test::fetch::Fetcher;
 use augentic_test::testdef::{TestDef, TestResult};
 use augentic_test::{Fixture, PreparedTestCase};
 use bytes::Bytes;
@@ -50,21 +51,18 @@ pub struct ReplayTransform {
 impl Fixture for Replay {
     type Error = qwasr_sdk::Error;
     type Input = R9kMessage;
-    type Output = ReplayOutput;
+    type Output = Vec<SmarTrakEvent>;
     type TransformParams = ReplayTransform;
 
     fn from_data(data_def: &TestDef<Self::Error>) -> Self {
         let input_str: Option<String> = data_def.input.as_ref().and_then(|v| {
             serde_json::from_value(v.clone()).expect("should deserialize input as XML String")
         });
-        let input = match input_str {
-            Some(s) => {
-                let msg: R9kMessage =
-                    quick_xml::de::from_str(&s).expect("should deserialize R9kMessage");
-                Some(msg)
-            }
-            None => None,
-        };
+        let input = input_str.map(|s| {
+            let msg: R9kMessage =
+                quick_xml::de::from_str(&s).expect("should deserialize R9kMessage");
+            msg
+        });
         let params: Option<Self::TransformParams> = data_def.params.as_ref().and_then(|v| {
             serde_json::from_value(v.clone()).expect("should deserialize transform parameters")
         });
@@ -72,13 +70,10 @@ impl Fixture for Replay {
             return Self { input, params, output: None };
         };
         let output = match output_def {
-            TestResult::Success(value) => {
-                if let Ok(events) = serde_json::from_value(value.clone()) {
-                    Some(ReplayOutput::Events(events))
-                } else {
-                    panic!("should deserialize output as SmarTrak events")
-                }
-            }
+            TestResult::Success(value) => serde_json::from_value(value.clone()).map_or_else(
+                |_| panic!("should deserialize output as SmarTrak events"),
+                |events| Some(ReplayOutput::Events(events)),
+            ),
             TestResult::Failure(err) => Some(ReplayOutput::Error(err.clone())),
         };
         Self { input, params, output }
@@ -110,7 +105,7 @@ impl Fixture for Replay {
                 if events.is_empty() {
                     return None;
                 }
-                return Some(Ok(output.clone()));
+                Some(Ok(events.clone()))
             }
         }
     }
@@ -166,56 +161,34 @@ impl HttpRequest for MockProvider {
         T::Data: Into<Vec<u8>>,
         T::Error: Into<Box<dyn Error + Send + Sync + 'static>>,
     {
-        let data = match &self.session {
+        match &self.session {
             // TODO: use test definition for static too.
             Session::Static(Static { stops, vehicles }) => {
-                match request.uri().path() {
-                    "/gtfs/stops" => serde_json::to_vec(&stops).context("failed to serialize static stops")?,
+                let data = match request.uri().path() {
+                    "/gtfs/stops" => {
+                        serde_json::to_vec(&stops).context("failed to serialize static stops")?
+                    }
                     "/allocations/trips" => {
                         let query = request.uri().query().unwrap_or("");
-                        if query.contains("externalRefId=445") {
-                            vec![]
-                        } else {
-                            serde_json::to_vec(&vehicles).context("failed to serialize static vehicles")?
-                        }
-                    },
+                        let vehicles =
+                            if query.contains("externalRefId=445") { &vec![] } else { vehicles };
+                        serde_json::to_vec(&vehicles).expect("failed to serialize static vehicles")
+                    }
                     _ => {
                         return Err(anyhow!("unknown path: {}", request.uri().path()));
                     }
-                }
-            },
-            Session::Replay(PreparedTestCase {http_requests, .. }) => {}
-        };
-
-        // let data = match request.uri().path() {
-        //     "/gtfs/stops" => {
-        //         let stops: Vec<StopInfo> = match &self.session {
-        //             Session::Static(Static { stops, .. }) => stops.clone(),
-        //             Session::Replay(PreparedTestCase { extension, .. }) => {
-        //                 extension.as_ref().and_then(|e| e.stop_info.clone()).into_iter().collect()
-        //             }
-        //         };
-        //         serde_json::to_vec(&stops).context("failed to serialize stops")?
-        //     }
-        //     "/allocations/trips" => {
-        //         let query = request.uri().query().unwrap_or("");
-        //         let vehicles = match &self.session {
-        //             Session::Static(Static { vehicles, .. }) => {
-        //                 if query.contains("externalRefId=445") { &vec![] } else { vehicles }
-        //             }
-        //             Session::Replay(PreparedTestCase { extension, .. }) => {
-        //                 extension.as_ref().and_then(|ext| ext.vehicles.as_deref()).unwrap_or(&[])
-        //             }
-        //         };
-        //         serde_json::to_vec(&vehicles).context("failed to serialize")?
-        //     }
-        //     _ => {
-        //         return Err(anyhow!("unknown path: {}", request.uri().path()));
-        //     }
-        // };
-
-        let body = Bytes::from(data);
-        Response::builder().status(200).body(body).context("failed to build response")
+                };
+                let body = Bytes::from(data);
+                Response::builder().status(200).body(body).context("failed to build response")
+            }
+            Session::Replay(PreparedTestCase { http_requests, .. }) => {
+                let Some(http_requests) = http_requests else {
+                    return Err(anyhow!("no http requests defined in replay session"));
+                };
+                let fetcher = Fetcher::new(http_requests);
+                fetcher.fetch(&request)
+            }
+        }
     }
 }
 

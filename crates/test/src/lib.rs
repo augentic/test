@@ -1,6 +1,7 @@
 //! Test Utilities and traits for use across Augentic projects.
 
-use crate::{fetch::Fetch, testdef::TestDef};
+use crate::fetch::Fetch;
+use crate::testdef::TestDef;
 
 pub mod fetch;
 pub mod testdef;
@@ -57,7 +58,8 @@ pub trait Fixture {
 
 /// A test case builder that can be prepared for execution.
 pub struct TestCase<D>
-where D: Fixture + Clone,
+where
+    D: Fixture + Clone,
 {
     test_def: TestDef<D::Error>,
 }
@@ -98,11 +100,7 @@ where
         let data = D::from_data(&self.test_def);
         let output = data.output();
         if data.input().is_none() {
-            return PreparedTestCase {
-                input: None,
-                http_requests,
-                output,
-            };
+            return PreparedTestCase { input: None, http_requests, output };
         }
         let input = data.transform(transform);
         PreparedTestCase { input: Some(input), http_requests, output }
