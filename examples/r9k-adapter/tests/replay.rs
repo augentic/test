@@ -5,10 +5,10 @@ mod provider;
 
 use std::fs::{self, File};
 
-use augentic_test::TestCase;
+use augentic_test::{TestCase, testdef::TestDef};
 use chrono::{Timelike, Utc};
 use chrono_tz::Pacific::Auckland;
-use qwasr_sdk::Client;
+use qwasr_sdk::{Client, Error};
 use r9k_adapter::R9kMessage;
 
 use crate::provider::{Replay, ReplayTransform};
@@ -19,13 +19,13 @@ use crate::provider::{Replay, ReplayTransform};
 async fn run() {
     for entry in fs::read_dir("data/sessions").expect("should read directory") {
         let file = File::open(entry.expect("should read entry").path()).expect("should open file");
-        let fixture: Replay = serde_json::from_reader(&file).expect("should deserialize session");
-        replay(fixture).await;
+        let test_def: TestDef<Error> = serde_json::from_reader(&file).expect("should deserialize session");
+        replay(test_def).await;
     }
 }
 
-async fn replay(fixture: Replay) {
-    let test_case = TestCase::new(fixture).prepare(shift_time);
+async fn replay(test_def: TestDef<Error>) {
+    let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let provider = provider::MockProvider::new_replay(test_case.clone());
     let client = Client::new("at").provider(provider.clone());
 
@@ -68,7 +68,7 @@ async fn replay(fixture: Replay) {
     }
 }
 
-fn shift_time(input: R9kMessage, params: Option<&ReplayTransform>) -> R9kMessage {
+fn shift_time(input: &R9kMessage, params: Option<&ReplayTransform>) -> R9kMessage {
     if params.is_none() {
         return input;
     }

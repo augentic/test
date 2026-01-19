@@ -32,7 +32,7 @@ pub trait Fixture {
     fn from_data(data_def: &TestDef<Self::Error>) -> Self;
 
     /// Convert input data into the input type needed by the test case handler.
-    fn input(&self) -> Self::Input;
+    fn input(&self) -> Option<Self::Input>;
 
     /// Convert input data into transformation parameters for the test case
     /// handler.
@@ -44,10 +44,7 @@ pub trait Fixture {
     /// the test case handler.
     fn transform<F>(&self, f: F) -> Self::Input
     where
-        F: FnOnce(Self::Input, Option<&Self::TransformParams>) -> Self::Input,
-    {
-        f(self.input(), self.params().as_ref())
-    }
+        F: FnOnce(&Self::Input, Option<&Self::TransformParams>) -> Self::Input;
 
     /// Convert input data into the expected output type needed by the test
     /// case handler, which could be an error for failure cases.
@@ -62,8 +59,7 @@ pub trait Fixture {
 pub struct TestCase<D>
 where D: Fixture + Clone,
 {
-    data: D,
-    raw: TestDef<D::Error>,
+    test_def: TestDef<D::Error>,
 }
 
 /// A test case that has been prepared for execution by transforming its input
@@ -75,7 +71,7 @@ where
     D: Fixture + Clone,
 {
     /// Prepared input data ready for the handler under test.
-    pub input: D::Input,
+    pub input: Option<D::Input>,
     /// Optional http request mocks required by the handler.
     pub http_requests: Option<Vec<Fetch>>,
     /// Expected output or error produced by the fixture.
@@ -88,19 +84,27 @@ where
 {
     /// Create a new test case from the given fixture data.
     #[must_use]
-    pub const fn new(data: D, raw: TestDef<D::Error>) -> Self {
-        Self { data, raw }
+    pub const fn new(test_def: TestDef<D::Error>) -> Self {
+        Self { test_def }
     }
 
     /// Apply input transformation and translation of input data types into
     /// the types needed by the test case handler.
     pub fn prepare<F>(&self, transform: F) -> PreparedTestCase<D>
     where
-        F: FnOnce(D::Input, Option<&D::TransformParams>) -> D::Input,
+        F: FnOnce(&D::Input, Option<&D::TransformParams>) -> D::Input,
     {
-        let input = self.data.transform(transform);
-        let extension = self.data.extension();
-        let output = self.data.output();
-        PreparedTestCase { input, extension, output }
+        let http_requests = self.test_def.http_requests.clone();
+        let data = D::from_data(&self.test_def);
+        let output = data.output();
+        if data.input().is_none() {
+            return PreparedTestCase {
+                input: None,
+                http_requests,
+                output,
+            };
+        }
+        let input = data.transform(transform);
+        PreparedTestCase { input: Some(input), http_requests, output }
     }
 }
