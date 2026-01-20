@@ -116,14 +116,16 @@ async fn no_matching_vehicle() {
 // Should return no events when there are no stop is found for the station.
 #[tokio::test]
 async fn no_matching_stop() {
-    let provider = MockProvider::new_static();
+    let file = File::open("data/static/0005.json").expect("should open file");
+    let test_def: TestDef<Error> =
+        serde_json::from_reader(&file).expect("should deserialize test file");
+    let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
+    let message = test_case.input.as_ref().expect("should have input message").clone();
+    let provider = MockProvider::new_replay(test_case);
+
     let client = Client::new("at").provider(provider.clone());
-
-    let xml = XmlBuilder::new().station(80).xml();
-    let message: R9kMessage =
-        quick_xml::de::from_reader(xml.as_bytes()).expect("should deserialize");
-
     client.request(message).await.expect("should process");
+
     let events = provider.events();
     assert!(events.is_empty());
 }
@@ -238,6 +240,7 @@ impl<'a> XmlBuilder<'a> {
         Self { station: 0, vehicle: "5226", arrival: true, delay_secs: 0, update: UpdateType::Full }
     }
 
+    #[allow(dead_code)]
     const fn station(mut self, station: u64) -> Self {
         self.station = station;
         self
