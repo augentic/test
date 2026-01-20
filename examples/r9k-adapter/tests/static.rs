@@ -3,13 +3,16 @@
 
 mod provider;
 
-use std::ops::Sub;
+use std::{fs::File, ops::Sub};
 
+use augentic_test::{TestCase, TestDef};
 use chrono::{Duration, Timelike, Utc};
 use chrono_tz::Pacific::Auckland;
 use qwasr_sdk::Error;
 use qwasr_sdk::api::Client;
 use r9k_adapter::{ChangeType, EventType, R9kMessage};
+
+use crate::provider::{Replay, shift_time};
 
 use self::provider::MockProvider;
 
@@ -30,13 +33,14 @@ async fn deserialize_xml() {
 // Should create an arrival event with a normal stop location.
 #[tokio::test]
 async fn arrival_event() {
-    let provider = MockProvider::new_static();
+    let file = File::open("data/static/0001.json").expect("should open file");
+    let test_def: TestDef<Error> =
+        serde_json::from_reader(&file).expect("should deserialize test file");
+    let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
+    let message = test_case.input.as_ref().expect("should have input message").clone();
+    let provider = MockProvider::new_replay(test_case);
+
     let client = Client::new("at").provider(provider.clone());
-
-    let xml = XmlBuilder::new().xml();
-    let message: R9kMessage =
-        quick_xml::de::from_reader(xml.as_bytes()).expect("should deserialize");
-
     client.request(message).await.expect("should process");
 
     let events = provider.events();

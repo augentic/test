@@ -7,22 +7,19 @@ use serde::Deserialize;
 use serde_json::Value;
 
 /// Configuration for mocking fetch requests.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(default)]
+#[derive(Clone, Debug, Default, Deserialize)]
 pub struct Fetch {
     /// Authority (host) to match for mock fetch requests.
-    ///
-    /// Defaults to "example.com".
-    pub authority: String,
+    pub authority: Option<String>,
 
     /// Method to match for mock fetch requests.
     ///
     /// Defaults to GET.
+    #[serde(default)]
     pub method: Method,
 
     /// Path to match for mock fetch requests, not including query parameters.
-    ///
-    /// Defaults to "/".
+    #[serde(default = "default_path")]
     pub path: String,
 
     /// String to uniquely identify a fetch request.
@@ -33,36 +30,29 @@ pub struct Fetch {
     pub request: Option<String>,
 
     /// Expected response if all the other fields match.
+    #[serde(default)]
     pub response: Response,
 }
 
-/// Default implementation for Fetch to fill in unspecified fields from test
-/// fixtures.
-impl Default for Fetch {
-    fn default() -> Self {
-        Self {
-            authority: "example.com".to_string(),
-            method: Method::GET,
-            path: "/".to_string(),
-            request: None,
-            response: Response::default(),
-        }
-    }
+fn default_path() -> String {
+    "/".to_string()
 }
 
 /// Supported HTTP verbs (methods) for fetch requests.
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "UPPERCASE")]
 pub enum Method {
     /// GET method.
-    GET,
+    #[default]
+    Get,
     /// POST method.
-    POST,
+    Post,
     /// PUT method.
-    PUT,
+    Put,
     /// DELETE method.
-    DELETE,
+    Delete,
     /// PATCH method.
-    PATCH,
+    Patch,
 }
 
 /// Mock HTTP response for fetch requests.
@@ -113,11 +103,11 @@ impl Fetcher {
     /// or host header is missing, or no matching fetch configuration is found.
     pub fn fetch<T>(&self, request: &http::Request<T>) -> anyhow::Result<http::Response<Bytes>> {
         let method = match *request.method() {
-            http::Method::GET => Method::GET,
-            http::Method::POST => Method::POST,
-            http::Method::PUT => Method::PUT,
-            http::Method::DELETE => Method::DELETE,
-            http::Method::PATCH => Method::PATCH,
+            http::Method::GET => Method::Get,
+            http::Method::POST => Method::Post,
+            http::Method::PUT => Method::Put,
+            http::Method::DELETE => Method::Delete,
+            http::Method::PATCH => Method::Patch,
             _ => return Err(anyhow!("unsupported HTTP method: {}", request.method())),
         };
 
@@ -134,10 +124,10 @@ impl Fetcher {
         let request_id = request.uri().query().map(str::to_owned);
 
         let fetch = self.fetches.iter().find(|candidate| {
-            candidate.authority == authority
+            candidate.authority.as_ref().is_none_or(|auth| auth == &authority)
                 && candidate.method == method
                 && candidate.path == path
-                && candidate.request == request_id
+                && (candidate.request.is_none() || candidate.request == request_id)
         });
 
         let fetch = fetch.ok_or_else(|| {
@@ -182,8 +172,8 @@ mod tests {
         "#;
 
         let fetch: Fetch = serde_json::from_str(json_data).expect("should deserialize Fetch");
-        assert_eq!(fetch.authority, "example.com");
-        assert_eq!(fetch.method, Method::GET);
+        assert_eq!(fetch.authority, Some("example.com".to_string()));
+        assert_eq!(fetch.method, Method::Get);
         assert_eq!(fetch.path, "/api/data");
         assert_eq!(fetch.response.status, 404);
         assert_eq!(fetch.response.body, "Not Found");
@@ -193,8 +183,8 @@ mod tests {
     fn fetch_deserialize_default() {
         let json_data = "{}";
         let fetch: Fetch = serde_json::from_str(json_data).expect("should deserialize Fetch");
-        assert_eq!(fetch.authority, "example.com");
-        assert_eq!(fetch.method, Method::GET);
+        assert_eq!(fetch.authority, None);
+        assert_eq!(fetch.method, Method::Get);
         assert_eq!(fetch.path, "/");
         assert_eq!(fetch.response.status, 200);
         assert_eq!(fetch.response.body, "");
@@ -212,8 +202,8 @@ mod tests {
         "#;
 
         let fetch: Fetch = serde_json::from_str(json_data).expect("should deserialize Fetch");
-        assert_eq!(fetch.authority, "example.com");
-        assert_eq!(fetch.method, Method::GET);
+        assert_eq!(fetch.authority, None);
+        assert_eq!(fetch.method, Method::Get);
         assert_eq!(fetch.path, "/allocations/trips");
         assert_eq!(fetch.response.status, 200);
         assert_eq!(fetch.response.body, "[\"vehicle 1\"]");
@@ -222,8 +212,8 @@ mod tests {
     #[test]
     fn fetcher_matches_authority() {
         let fetch = Fetch {
-            authority: "api.example.com".to_string(),
-            method: Method::GET,
+            authority: Some("api.example.com".to_string()),
+            method: Method::Get,
             path: "/data".to_string(),
             request: Some("q=42".to_string()),
             response: Response { status: 201, body: json!({"value": 42}) },
@@ -240,8 +230,8 @@ mod tests {
     #[test]
     fn fetcher_matches_host_header() {
         let fetch = Fetch {
-            authority: "example.com".to_string(),
-            method: Method::GET,
+            authority: Some("example.com".to_string()),
+            method: Method::Get,
             path: "/allocations".to_string(),
             request: Some("vehicle=1".to_string()),
             response: Response { status: 200, body: json!([1]) },

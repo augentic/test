@@ -5,20 +5,18 @@ mod provider;
 
 use std::fs::{self, File};
 
-use augentic_test::TestCase;
-use augentic_test::testdef::TestDef;
-use chrono::{Timelike, Utc};
+use augentic_test::{TestCase, TestDef};
+use chrono::Utc;
 use chrono_tz::Pacific::Auckland;
 use qwasr_sdk::{Client, Error};
-use r9k_adapter::R9kMessage;
 
-use crate::provider::{Replay, ReplayTransform};
+use crate::provider::{Replay, shift_time};
 
 // Load each test case. For each, present the input to the adapter and compare
 // the output expected.
 #[tokio::test]
 async fn run() {
-    for entry in fs::read_dir("data/sessions").expect("should read directory") {
+    for entry in fs::read_dir("data/replay").expect("should read directory") {
         let file = File::open(entry.expect("should read entry").path()).expect("should open file");
         let test_def: TestDef<Error> =
             serde_json::from_reader(&file).expect("should deserialize session");
@@ -64,29 +62,4 @@ async fn replay(test_def: TestDef<Error>) {
             assert_eq!(actual_error.description(), expected_error.description());
         }
     }
-}
-
-fn shift_time(input: &R9kMessage, params: Option<&ReplayTransform>) -> R9kMessage {
-    if params.is_none() {
-        return input.clone();
-    }
-    let delay = params.as_ref().map_or(0, |p| p.delay);
-    let mut request = input.clone();
-    let Some(change) = request.train_update.changes.get_mut(0) else {
-        return request;
-    };
-
-    let now = Utc::now().with_timezone(&Auckland);
-    request.train_update.created_date = now.date_naive();
-
-    #[allow(clippy::cast_possible_wrap)]
-    let from_midnight = now.num_seconds_from_midnight() as i32;
-    let adjusted_secs = from_midnight - delay;
-
-    if change.has_departed {
-        change.actual_departure_time = adjusted_secs;
-    } else if change.has_arrived {
-        change.actual_arrival_time = adjusted_secs;
-    }
-    request
 }

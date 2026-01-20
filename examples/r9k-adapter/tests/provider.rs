@@ -6,10 +6,10 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Context, Result, anyhow};
-use augentic_test::fetch::Fetcher;
-use augentic_test::testdef::{TestDef, TestResult};
-use augentic_test::{Fixture, PreparedTestCase};
+use augentic_test::{Fetcher, Fixture, PreparedTestCase, TestDef, TestResult};
 use bytes::Bytes;
+use chrono::{Timelike, Utc};
+use chrono_tz::Pacific::Auckland;
 use http::{Request, Response};
 use qwasr_sdk::{Config, HttpRequest, Identity, Message, Publisher};
 use r9k_adapter::{R9kMessage, SmarTrakEvent, StopInfo};
@@ -85,16 +85,6 @@ impl Fixture for Replay {
 
     fn params(&self) -> Option<Self::TransformParams> {
         self.params.clone()
-    }
-
-    fn transform<F>(&self, f: F) -> Self::Input
-    where
-        F: FnOnce(&Self::Input, Option<&Self::TransformParams>) -> Self::Input,
-    {
-        let Some(input) = &self.input else {
-            return Self::Input::default();
-        };
-        f(input, self.params.as_ref())
     }
 
     fn output(&self) -> Option<Result<Self::Output, Self::Error>> {
@@ -205,4 +195,32 @@ impl Identity for MockProvider {
     async fn access_token(&self, _identity: String) -> Result<String> {
         Ok("mock_access_token".to_string())
     }
+}
+
+/// Input transformation function that shifts the timestamps in the `R9kMessage`
+/// by the given delay in seconds.
+#[must_use]
+pub fn shift_time(input: &R9kMessage, params: Option<&ReplayTransform>) -> R9kMessage {
+    if params.is_none() {
+        return input.clone();
+    }
+    let delay = params.as_ref().map_or(0, |p| p.delay);
+    let mut request = input.clone();
+    let Some(change) = request.train_update.changes.get_mut(0) else {
+        return request;
+    };
+
+    let now = Utc::now().with_timezone(&Auckland);
+    request.train_update.created_date = now.date_naive();
+
+    #[allow(clippy::cast_possible_wrap)]
+    let from_midnight = now.num_seconds_from_midnight() as i32;
+    let adjusted_secs = from_midnight - delay;
+
+    if change.has_departed {
+        change.actual_departure_time = adjusted_secs;
+    } else if change.has_arrived {
+        change.actual_arrival_time = adjusted_secs;
+    }
+    request
 }

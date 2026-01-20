@@ -93,7 +93,7 @@ mod tests {
         assert_eq!(test_def.params.expect("params exist")["delay"], serde_json::json!(9));
         let http_requests = test_def.http_requests.expect("http requests exist");
         assert_eq!(http_requests.len(), 2);
-        assert_eq!(http_requests[0].method, Method::GET); // default applied
+        assert_eq!(http_requests[0].method, Method::Get); // default applied
         assert_eq!(http_requests[1].path, "/allocations/trips");
         match test_def.output.expect("output exists") {
             TestResult::Success(events) => {
