@@ -58,14 +58,16 @@ async fn arrival_event() {
 // Should create a departure event with an stop location updated.
 #[tokio::test]
 async fn departure_event() {
-    let provider = MockProvider::new_static();
+    let file = File::open("data/static/0002.json").expect("should open file");
+    let test_def: TestDef<Error> =
+        serde_json::from_reader(&file).expect("should deserialize test file");
+    let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
+    let message = test_case.input.as_ref().expect("should have input message").clone();
+    let provider = MockProvider::new_replay(test_case);
+
     let client = Client::new("at").provider(provider.clone());
-
-    let xml = XmlBuilder::new().arrival(false).xml();
-    let message: R9kMessage =
-        quick_xml::de::from_reader(xml.as_bytes()).expect("should deserialize");
-
     client.request(message).await.expect("should process");
+
     let events = provider.events();
     assert_eq!(events.len(), 2);
 
@@ -242,6 +244,7 @@ impl<'a> XmlBuilder<'a> {
         self
     }
 
+    #[allow(dead_code)]
     const fn arrival(mut self, arrival: bool) -> Self {
         self.arrival = arrival;
         self
