@@ -42,13 +42,14 @@ pub trait Fixture {
 
     /// Apply a transformation function to the input data before passing it to
     /// the test case handler.
-    /// 
+    ///
     /// The default implementation returns a default input when there is no
     /// input data or applies the given transformation function to the input
     /// data. In most cases this should be sufficient.
     fn transform<F>(&self, f: F) -> Self::Input
     where
-        F: FnOnce(&Self::Input, Option<&Self::TransformParams>) -> Self::Input {
+        F: FnOnce(&Self::Input, Option<&Self::TransformParams>) -> Self::Input,
+    {
         let Some(input) = &self.input() else {
             return Self::Input::default();
         };

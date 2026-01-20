@@ -3,7 +3,8 @@
 
 mod provider;
 
-use std::{fs::File, ops::Sub};
+use std::fs::File;
+use std::ops::Sub;
 
 use augentic_test::{TestCase, TestDef};
 use chrono::{Duration, Timelike, Utc};
@@ -12,9 +13,8 @@ use qwasr_sdk::Error;
 use qwasr_sdk::api::Client;
 use r9k_adapter::{ChangeType, EventType, R9kMessage};
 
-use crate::provider::{Replay, shift_time};
-
 use self::provider::MockProvider;
+use crate::provider::{Replay, shift_time};
 
 // Should deserialize XML into R9K message.
 #[tokio::test]
