@@ -82,14 +82,16 @@ async fn departure_event() {
 // Should return no events for an unmapped station.
 #[tokio::test]
 async fn unmapped_station() {
-    let provider = MockProvider::new_static();
+    let file = File::open("data/static/0003.json").expect("should open file");
+    let test_def: TestDef<Error> =
+        serde_json::from_reader(&file).expect("should deserialize test file");
+    let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
+    let message = test_case.input.as_ref().expect("should have input message").clone();
+    let provider = MockProvider::new_replay(test_case);
+
     let client = Client::new("at").provider(provider.clone());
-
-    let xml = XmlBuilder::new().station(5).xml();
-    let message: R9kMessage =
-        quick_xml::de::from_reader(xml.as_bytes()).expect("should deserialize");
-
     client.request(message).await.expect("should process");
+
     let events = provider.events();
     assert!(events.is_empty());
 }
