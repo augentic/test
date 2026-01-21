@@ -9,6 +9,7 @@ doc-valid-idents = [
 allowed-duplicate-crates = [
     "core-foundation",
     "embedded-io",
+    "foldhash",
     "getrandom",
     "hashbrown",
     "linux-raw-sys",
