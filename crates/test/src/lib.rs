@@ -1,17 +1,16 @@
 //! Test Utilities and traits for use across Augentic projects.
+mod fetch;
+mod testdef;
 
-use crate::fetch::Fetch;
-use crate::testdef::TestDef;
-
-pub mod fetch;
-pub mod testdef;
+pub use fetch::{Fetch, Fetcher};
+pub use testdef::{TestDef, TestResult};
 
 /// A trait that expresses the structure of taking in some data and
 /// constructing (say by deserialization) an input and an output.
 pub trait Fixture {
     /// Type of input data needed by the test case. In most cases this is likely
     /// to be the request type of the handler under test.
-    type Input;
+    type Input: Default;
 
     /// Type of output data produced by the test case. This could be the
     /// expected output type of the handler under test, or an error type for
@@ -43,9 +42,19 @@ pub trait Fixture {
 
     /// Apply a transformation function to the input data before passing it to
     /// the test case handler.
+    ///
+    /// The default implementation returns a default input when there is no
+    /// input data or applies the given transformation function to the input
+    /// data. In most cases this should be sufficient.
     fn transform<F>(&self, f: F) -> Self::Input
     where
-        F: FnOnce(&Self::Input, Option<&Self::TransformParams>) -> Self::Input;
+        F: FnOnce(&Self::Input, Option<&Self::TransformParams>) -> Self::Input,
+    {
+        let Some(input) = &self.input() else {
+            return Self::Input::default();
+        };
+        f(input, self.params().as_ref())
+    }
 
     /// Convert input data into the expected output type needed by the test
     /// case handler, which could be an error for failure cases.
@@ -57,6 +66,7 @@ pub trait Fixture {
 }
 
 /// A test case builder that can be prepared for execution.
+#[derive(Clone, Debug)]
 pub struct TestCase<D>
 where
     D: Fixture + Clone,
@@ -67,7 +77,7 @@ where
 /// A test case that has been prepared for execution by transforming its input
 /// and extracting its expected output and extension data into a form that is
 /// digestible by the test runner.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PreparedTestCase<D>
 where
     D: Fixture + Clone,
