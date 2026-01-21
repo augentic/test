@@ -133,12 +133,14 @@ async fn no_matching_stop() {
 // Should return no events when there is no train update.
 #[tokio::test]
 async fn no_train_update() {
-    let provider = MockProvider::new_static();
-    let client = Client::new("at").provider(provider);
+    let file = File::open("data/static/0006.json").expect("should open file");
+    let test_def: TestDef<Error> =
+        serde_json::from_reader(&file).expect("should deserialize test file");
+    let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
+    let message = test_case.input.as_ref().expect("should have input message").clone();
+    let provider = MockProvider::new_replay(test_case);
 
-    let xml = XmlBuilder::new().update(UpdateType::None).xml();
-    let message: R9kMessage =
-        quick_xml::de::from_reader(xml.as_bytes()).expect("should deserialize");
+    let client = Client::new("at").provider(provider.clone());
 
     let Err(Error::BadRequest { code, description }) = client.request(message).await else {
         panic!("should return BadRequest error");
@@ -228,6 +230,7 @@ struct XmlBuilder<'a> {
 }
 
 #[derive(PartialEq, Eq)]
+#[allow(dead_code)]
 enum UpdateType {
     None,
     Full,
