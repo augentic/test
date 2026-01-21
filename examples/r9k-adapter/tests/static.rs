@@ -237,18 +237,26 @@ async fn too_late() {
 // the current time.
 #[tokio::test]
 async fn too_early() {
-    let provider = MockProvider::new_static();
-    let client = Client::new("at").provider(provider);
+    let file = File::open("data/static/0010.json").expect("should open file");
+    let test_def: TestDef<Error> =
+        serde_json::from_reader(&file).expect("should deserialize test file");
+    let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
+    let message = test_case.input.as_ref().expect("should have input message").clone();
+    let provider = MockProvider::new_replay(test_case.clone());
 
-    let xml = XmlBuilder::new().delay_secs(-32).xml();
-    let message: R9kMessage =
-        quick_xml::de::from_reader(xml.as_bytes()).expect("should deserialize");
+    let client = Client::new("at").provider(provider.clone());
 
-    let Err(Error::BadRequest { code, description }) = client.request(message).await else {
-        panic!("should return no actual update error");
+    let Some(expected_result) = &test_case.output else {
+        panic!("should have expected output");
     };
-    assert_eq!(code, "bad_time");
-    assert_eq!(description, "too early by 32 seconds");
+    match expected_result {
+        Ok(_) => panic!("should have error"),
+        Err(expected_error) => {
+            let actual_error = client.request(message).await.expect_err("should have error");
+            assert_eq!(actual_error.code(), expected_error.code());
+            assert_eq!(actual_error.description(), expected_error.description());
+        }
+    }
 }
 
 struct XmlBuilder<'a> {
