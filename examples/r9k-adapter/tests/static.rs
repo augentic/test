@@ -138,15 +138,21 @@ async fn no_train_update() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case);
+    let provider = MockProvider::new_replay(test_case.clone());
 
     let client = Client::new("at").provider(provider.clone());
 
-    let Err(Error::BadRequest { code, description }) = client.request(message).await else {
-        panic!("should return BadRequest error");
+    let Some(expected_result) = &test_case.output else {
+        panic!("should have expected output");
     };
-    assert_eq!(code, "no_update");
-    assert_eq!(description, "contains no updates");
+    match expected_result {
+        Ok(_) => panic!("should have error"),
+        Err(expected_error) => {
+            let actual_error = client.request(message).await.expect_err("should have error");
+            assert_eq!(actual_error.code(), expected_error.code());
+            assert_eq!(actual_error.description(), expected_error.description());
+        }
+    }
 }
 
 // Should return no events when there is a train update but it contains no
@@ -158,33 +164,47 @@ async fn no_changes() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case);
+    let provider = MockProvider::new_replay(test_case.clone());
 
     let client = Client::new("at").provider(provider.clone());
 
-    let Err(Error::BadRequest { code, description }) = client.request(message).await else {
-        panic!("should return BadRequest error");
+    let Some(expected_result) = &test_case.output else {
+        panic!("should have expected output");
     };
-    assert_eq!(code, "no_update");
-    assert_eq!(description, "contains no updates");
+    match expected_result {
+        Ok(_) => panic!("should have error"),
+        Err(expected_error) => {
+            let actual_error = client.request(message).await.expect_err("should have error");
+            assert_eq!(actual_error.code(), expected_error.code());
+            assert_eq!(actual_error.description(), expected_error.description());
+        }
+    }
 }
 
 // Should return no events when there is a train update but it contains no
 // actual changes.
 #[tokio::test]
 async fn no_actual_changes() {
-    let provider = MockProvider::new_static();
-    let client = Client::new("at").provider(provider);
+    let file = File::open("data/static/0008.json").expect("should open file");
+    let test_def: TestDef<Error> =
+        serde_json::from_reader(&file).expect("should deserialize test file");
+    let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
+    let message = test_case.input.as_ref().expect("should have input message").clone();
+    let provider = MockProvider::new_replay(test_case.clone());
 
-    let xml = XmlBuilder::new().update(UpdateType::NoActualChanges).xml();
-    let message: R9kMessage =
-        quick_xml::de::from_reader(xml.as_bytes()).expect("should deserialize");
+    let client = Client::new("at").provider(provider.clone());
 
-    let Err(Error::BadRequest { code, description }) = client.request(message).await else {
-        panic!("should return BadRequest error");
+    let Some(expected_result) = &test_case.output else {
+        panic!("should have expected output");
     };
-    assert_eq!(code, "no_update");
-    assert_eq!(description, "arrival/departure time <= 0");
+    match expected_result {
+        Ok(_) => panic!("should have error"),
+        Err(expected_error) => {
+            let actual_error = client.request(message).await.expect_err("should have error");
+            assert_eq!(actual_error.code(), expected_error.code());
+            assert_eq!(actual_error.description(), expected_error.description());
+        }
+    }
 }
 
 // Should return no events when train update arrives more than 60 seconds after
@@ -240,24 +260,22 @@ enum UpdateType {
     NoActualChanges,
 }
 
+#[allow(dead_code)]
 impl<'a> XmlBuilder<'a> {
     const fn new() -> Self {
         Self { station: 0, vehicle: "5226", arrival: true, delay_secs: 0, update: UpdateType::Full }
     }
 
-    #[allow(dead_code)]
     const fn station(mut self, station: u64) -> Self {
         self.station = station;
         self
     }
 
-    #[allow(dead_code)]
     const fn vehicle(mut self, vehicle: &'a str) -> Self {
         self.vehicle = vehicle;
         self
     }
 
-    #[allow(dead_code)]
     const fn arrival(mut self, arrival: bool) -> Self {
         self.arrival = arrival;
         self

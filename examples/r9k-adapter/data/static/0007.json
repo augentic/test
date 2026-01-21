@@ -4,7 +4,7 @@
         "failure": {
             "BadRequest": {
                 "code": "no_update",
-                "description": "contains no update"
+                "description": "contains no updates"
             }
         }
     }
