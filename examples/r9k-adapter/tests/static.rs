@@ -38,7 +38,7 @@ async fn arrival_event() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case);
+    let provider = MockProvider::new(test_case);
 
     let client = Client::new("at").provider(provider.clone());
     client.request(message).await.expect("should process");
@@ -63,7 +63,7 @@ async fn departure_event() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case);
+    let provider = MockProvider::new(test_case);
 
     let client = Client::new("at").provider(provider.clone());
     client.request(message).await.expect("should process");
@@ -87,7 +87,7 @@ async fn unmapped_station() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case);
+    let provider = MockProvider::new(test_case);
 
     let client = Client::new("at").provider(provider.clone());
     client.request(message).await.expect("should process");
@@ -104,7 +104,7 @@ async fn no_matching_vehicle() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case);
+    let provider = MockProvider::new(test_case);
 
     let client = Client::new("at").provider(provider.clone());
     client.request(message).await.expect("should process");
@@ -121,7 +121,7 @@ async fn no_matching_stop() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case);
+    let provider = MockProvider::new(test_case);
 
     let client = Client::new("at").provider(provider.clone());
     client.request(message).await.expect("should process");
@@ -138,7 +138,7 @@ async fn no_train_update() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case.clone());
+    let provider = MockProvider::new(test_case.clone());
 
     let client = Client::new("at").provider(provider.clone());
 
@@ -164,7 +164,7 @@ async fn no_changes() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case.clone());
+    let provider = MockProvider::new(test_case.clone());
 
     let client = Client::new("at").provider(provider.clone());
 
@@ -190,7 +190,7 @@ async fn no_actual_changes() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case.clone());
+    let provider = MockProvider::new(test_case.clone());
 
     let client = Client::new("at").provider(provider.clone());
 
@@ -216,7 +216,7 @@ async fn too_late() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case.clone());
+    let provider = MockProvider::new(test_case.clone());
 
     let client = Client::new("at").provider(provider.clone());
 
@@ -242,7 +242,7 @@ async fn too_early() {
         serde_json::from_reader(&file).expect("should deserialize test file");
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
     let message = test_case.input.as_ref().expect("should have input message").clone();
-    let provider = MockProvider::new_replay(test_case.clone());
+    let provider = MockProvider::new(test_case.clone());
 
     let client = Client::new("at").provider(provider.clone());
 

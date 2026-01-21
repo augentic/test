@@ -26,7 +26,7 @@ async fn run() {
 
 async fn replay(test_def: TestDef<Error>) {
     let test_case = TestCase::<Replay>::new(test_def).prepare(shift_time);
-    let provider = provider::MockProvider::new_replay(test_case.clone());
+    let provider = provider::MockProvider::new(test_case.clone());
     let client = Client::new("at").provider(provider.clone());
 
     let result = client.request(test_case.input.expect("replay test input expected")).await;

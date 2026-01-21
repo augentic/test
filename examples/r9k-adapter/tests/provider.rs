@@ -12,21 +12,8 @@ use chrono::{Timelike, Utc};
 use chrono_tz::Pacific::Auckland;
 use http::{Request, Response};
 use qwasr_sdk::{Config, HttpRequest, Identity, Message, Publisher};
-use r9k_adapter::{R9kMessage, SmarTrakEvent, StopInfo};
+use r9k_adapter::{R9kMessage, SmarTrakEvent};
 use serde::Deserialize;
-
-#[allow(dead_code)]
-#[derive(Clone)]
-pub enum Session {
-    Static(Static),
-    Replay(PreparedTestCase<Replay>),
-}
-
-#[derive(Clone)]
-pub struct Static {
-    pub stops: Vec<StopInfo>,
-    pub vehicles: Vec<String>,
-}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Replay {
@@ -103,26 +90,11 @@ impl Fixture for Replay {
 
 #[derive(Clone)]
 pub struct MockProvider {
-    session: Session,
+    test_case: PreparedTestCase<Replay>,
     events: Arc<Mutex<Vec<SmarTrakEvent>>>,
 }
 
 impl MockProvider {
-    #[allow(dead_code)]
-    #[must_use]
-    pub fn new_static() -> Self {
-        let session = Session::Static(Static {
-            stops: vec![
-                StopInfo { stop_code: "133".to_string(), stop_lat: -36.12345, stop_lon: 174.12345 },
-                StopInfo { stop_code: "134".to_string(), stop_lat: -36.54321, stop_lon: 174.54321 },
-                StopInfo { stop_code: "9218".to_string(), stop_lat: -36.567, stop_lon: 174.44444 },
-            ],
-            vehicles: vec!["vehicle 1".to_string()],
-        });
-
-        Self { session, events: Arc::new(Mutex::new(Vec::new())) }
-    }
-
     #[allow(clippy::missing_panics_doc)]
     #[allow(dead_code)]
     #[must_use]
@@ -132,8 +104,8 @@ impl MockProvider {
 
     #[allow(dead_code)]
     #[must_use]
-    pub fn new_replay(replay: PreparedTestCase<Replay>) -> Self {
-        Self { session: Session::Replay(replay), events: Arc::new(Mutex::new(Vec::new())) }
+    pub fn new(test_case: PreparedTestCase<Replay>) -> Self {
+        Self { test_case, events: Arc::new(Mutex::new(Vec::new())) }
     }
 }
 
@@ -151,34 +123,11 @@ impl HttpRequest for MockProvider {
         T::Data: Into<Vec<u8>>,
         T::Error: Into<Box<dyn Error + Send + Sync + 'static>>,
     {
-        match &self.session {
-            // TODO: use test definition for static too.
-            Session::Static(Static { stops, vehicles }) => {
-                let data = match request.uri().path() {
-                    "/gtfs/stops" => {
-                        serde_json::to_vec(&stops).context("failed to serialize static stops")?
-                    }
-                    "/allocations/trips" => {
-                        let query = request.uri().query().unwrap_or("");
-                        let vehicles =
-                            if query.contains("externalRefId=445") { &vec![] } else { vehicles };
-                        serde_json::to_vec(&vehicles).expect("failed to serialize static vehicles")
-                    }
-                    _ => {
-                        return Err(anyhow!("unknown path: {}", request.uri().path()));
-                    }
-                };
-                let body = Bytes::from(data);
-                Response::builder().status(200).body(body).context("failed to build response")
-            }
-            Session::Replay(PreparedTestCase { http_requests, .. }) => {
-                let Some(http_requests) = http_requests else {
-                    return Err(anyhow!("no http requests defined in replay session"));
-                };
-                let fetcher = Fetcher::new(http_requests);
-                fetcher.fetch(&request)
-            }
-        }
+        let Some(http_requests) = &self.test_case.http_requests else {
+            return Err(anyhow!("no http requests defined in replay session"));
+        };
+        let fetcher = Fetcher::new(http_requests);
+        fetcher.fetch(&request)
     }
 }
 
