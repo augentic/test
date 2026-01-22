@@ -202,6 +202,10 @@ criteria = "safe-to-deploy"
 version = "0.2.0"
 criteria = "safe-to-deploy"
 
+[[exemptions.fallible-streaming-iterator]]
+version = "0.1.9"
+criteria = "safe-to-deploy"
+
 [[exemptions.fd-lock]]
 version = "4.0.4"
 criteria = "safe-to-deploy"
@@ -246,6 +250,10 @@ criteria = "safe-to-deploy"
 version = "0.3.4"
 criteria = "safe-to-deploy"
 
+[[exemptions.hashlink]]
+version = "0.7.0"
+criteria = "safe-to-deploy"
+
 [[exemptions.hyper-rustls]]
 version = "0.27.5"
 criteria = "safe-to-deploy"
@@ -256,6 +264,10 @@ criteria = "safe-to-deploy"
 
 [[exemptions.id-arena]]
 version = "2.3.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.inherent]]
+version = "1.0.13"
 criteria = "safe-to-deploy"
 
 [[exemptions.io-extras]]
@@ -300,6 +312,10 @@ criteria = "safe-to-deploy"
 
 [[exemptions.libm]]
 version = "0.2.15"
+criteria = "safe-to-deploy"
+
+[[exemptions.libsqlite3-sys]]
+version = "0.36.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.linux-raw-sys]]
@@ -442,10 +458,6 @@ criteria = "safe-to-deploy"
 version = "0.1.1"
 criteria = "safe-to-deploy"
 
-[[exemptions.rand_core]]
-version = "0.9.5"
-criteria = "safe-to-deploy"
-
 [[exemptions.rand_xorshift]]
 version = "0.4.0"
 criteria = "safe-to-deploy"
@@ -468,6 +480,14 @@ criteria = "safe-to-deploy"
 
 [[exemptions.rkyv_derive]]
 version = "0.8.14"
+criteria = "safe-to-deploy"
+
+[[exemptions.rsqlite-vfs]]
+version = "0.1.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.rusqlite]]
+version = "0.38.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.rustix]]
@@ -518,6 +538,10 @@ criteria = "safe-to-deploy"
 version = "0.1.27"
 criteria = "safe-to-deploy"
 
+[[exemptions.sea-query]]
+version = "0.32.7"
+criteria = "safe-to-deploy"
+
 [[exemptions.security-framework]]
 version = "3.5.1"
 criteria = "safe-to-deploy"
@@ -544,6 +568,10 @@ criteria = "safe-to-deploy"
 
 [[exemptions.siphasher]]
 version = "0.3.10"
+criteria = "safe-to-deploy"
+
+[[exemptions.sqlite-wasm-rs]]
+version = "0.5.2"
 criteria = "safe-to-deploy"
 
 [[exemptions.stable_deref_trait]]
